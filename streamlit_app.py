@@ -1,60 +1,62 @@
 import streamlit as st
 import math
 
-# Page config
-st.set_page_config(page_title="Cyber-Santa's Password Grader", page_icon="🎄")
+# --- STEP 1: UI SETUP ---
+st.title("🛡️ Cyber-Santa Password Grader")
+st.write("Is your password on the Naughty or Nice list? Let's check the math.")
 
-st.title("🎄 Cyber-Santa's Password Grader")
-st.write("Is your password a gift to hackers or a fortress of joy?")
+# User inputs: We don't need the actual password, just the stats
+length = st.number_input("Password Length", min_value=0, value=8)
 
-# 1. Inputs
-length = st.number_input("How many characters long is it?", min_value=1, max_value=128, value=8)
-
-st.subheader("What's inside?")
 col1, col2 = st.columns(2)
 with col1:
-    has_lower = st.checkbox("Lowercase letters (a-z)", value=True)
-    has_upper = st.checkbox("Uppercase letters (A-Z)")
+    use_lower = st.checkbox("Lowercase (a-z)", value=True)
+    use_upper = st.checkbox("Uppercase (A-Z)")
 with col2:
-    has_digits = st.checkbox("Numbers (0-9)")
-    has_symbols = st.checkbox("Special Symbols (!@#$)")
+    use_number = st.checkbox("Numbers (0-9)")
+    use_symbol = st.checkbox("Symbols (!@#$)")
 
-# 2. Logic
-pool_size = 0
-if has_lower: pool_size += 26
-if has_upper: pool_size += 26
-if has_digits: pool_size += 10
-if has_symbols: pool_size += 32
+# --- STEP 2: CALCULATING THE CHARACTER POOL (R) ---
+# 'R' represents the number of possible characters for each 'slot' in the password.
+r_value = 0
+if use_lower: r_value += 26
+if use_upper: r_value += 26
+if use_number: r_value += 10
+if use_symbol: r_value += 32
 
-if pool_size > 0:
-    entropy = length * math.log2(pool_size)
-    combinations = pool_size ** length
+# --- STEP 3: THE CORE MATH (ENTROPY & COMBINATIONS) ---
+if r_value > 0 and length > 0:
+    # Entropy (E) formula: E = L * log2(R)
+    # This tells us how many 'bits' of randomness the password contains.
+    entropy = length * math.log2(r_value)
     
-    # Cracking Speed (100 Billion per sec)
-    seconds_to_crack = combinations / 100_000_000_000
+    # Total Combinations: R raised to the power of L
+    # This represents every possible variation a hacker would have to guess.
+    total_combinations = r_value ** length
     
-    st.divider()
-
-    # 3. THE FUNNY RANKING SECTION
-    st.subheader("🎅 Cyber-Santa's Verdict:")
-
+    # --- STEP 4: ESTIMATING CRACK TIME ---
+    # We assume a high-end cracking rig doing 100 Billion guesses per second.
+    guesses_per_sec = 100_000_000_000
+    seconds = total_combinations / guesses_per_sec
+    
+    # --- STEP 5: THE "VERDICT" LOGIC ---
+    st.subheader(f"Entropy Score: {entropy:.2f} bits")
+    
     if entropy < 40:
-        st.error("🚨 NAUGHTY LIST DETECTED!")
-        st.write("**Verdict:** Your password is like leaving your front door open with a 'Welcome' mat for hackers. Even the Grinch could crack this in seconds. **You need to improve!**")
-    elif entropy < 70:
-        st.warning("⚠️ GETTING WARMER...")
-        st.write("**Verdict:** It's okay, but a determined elf with a laptop could still break in. Add more length to get a better gift from Santa next year!")
+        st.error("Verdict: 🎅 NAUGHTY (Very Weak)")
+    elif entropy < 60:
+        st.warning("Verdict: 🌙 GETTING BETTER (Decent)")
     else:
-        st.success("🎁 NICE LIST! MERRY CHRISTMAS!")
-        st.write("**Verdict:** Ho Ho Holy Security! This password is a fortress. It would take centuries to crack. Stay frosty and keep those accounts safe!")
+        st.success("Verdict: 🌟 NICE (Strong Password)")
 
-    # 4. The Stats (For the Geeks)
-    with st.expander("See the nerdy security math"):
-        st.write(f"**Entropy:** {entropy:.2f} bits")
-        if seconds_to_crack < 60:
-            st.write(f"**Estimated Crack Time:** {seconds_to_crack:.2f} seconds")
-        else:
-            years = seconds_to_crack / 31536000
-            st.write(f"**Estimated Crack Time:** {years:,.0f} years")
+    # Convert seconds into a human-readable format
+    if seconds < 60:
+        st.write(f"Time to crack: {seconds:.2f} seconds")
+    elif seconds < 3600:
+        st.write(f"Time to crack: {seconds/60:.2f} minutes")
+    elif seconds < 86400:
+        st.write(f"Time to crack: {seconds/3600:.2f} hours")
+    else:
+        st.write(f"Time to crack: {seconds/86400:,.0f} days")
 else:
-    st.info("Check some boxes to let Santa check your work!")
+    st.info("Select character types to calculate strength.")
